@@ -1,6 +1,8 @@
 package com.example.kuro.machinori;
 
+import android.content.Context;
 import android.os.Handler;
+import android.util.Log;
 
 import java.util.TimerTask;
 
@@ -9,14 +11,18 @@ import java.util.TimerTask;
  * Created by keinon on 2015/09/19.
  */
 public class MyTimerTask extends TimerTask {
-    private Handler mHandler = new Handler();
+    private Handler mHandler;
+    private Context context;
+    MyTimerTask(Context context){
+        mHandler = new Handler();
+        this.context = context;
+    }
     @Override
     public void run() {
-        //‚±‚±‚É’èüŠú‚ÅÀs‚µ‚½‚¢ˆ—‚ğ‹Lq‚µ‚Ü‚·
         mHandler.post( new Runnable() {
             public void run() {
-                SendGetTask sendGetTask = new SendGetTask();
-                //sendGetTask.sendGetTask(latitude,longitude,accelerationX,accelerationY,accelerationZ,deviceId);
+                ((GpsActivity)context).send();
+                Log.v("ã‚¿ã‚¤ãƒãƒ¼æ¥ãŸã‚ˆâ˜…","");
             }
         });
     }

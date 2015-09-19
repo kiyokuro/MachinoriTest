@@ -13,7 +13,6 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -24,16 +23,17 @@ import java.util.Timer;
 
 
 public class GpsActivity extends Activity implements LocationListener, SensorEventListener {
-    private String latitude;//緯度
-    private String longitude;//経度
-    private String accelerationX;//加速度x軸
-    private String accelerationY;//加速度y軸
-    private String accelerationZ;//加速度z軸
-    private String deviceId;//デバイスID
+    //private String latitude;//緯度
+    //private String longitude;//経度
+    //private String accelerationX;//加速度x軸
+    //private String accelerationY;//加速度y軸
+    //private String accelerationZ;//加速度z軸
+    //private String deviceId;//デバイスID
     private SensorManager manager;
     private TextView values;//加速度をセット
     private TextView tvDevicdId;//デバイスIDをセット
-    private Timer mainTimer;
+    private Timer timer;
+    Data data = new Data();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -76,15 +76,15 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         //デバイスIDを取得
         TelephonyManager telephonyManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
         tvDevicdId = (TextView)findViewById(R.id.device_id);
-        deviceId = telephonyManager.getDeviceId();
-        tvDevicdId.setText("デバイスID"+ deviceId);
+        data.setDeviceId(telephonyManager.getDeviceId());
+        tvDevicdId.setText("デバイスID"+ data.getDeviceId());
 
         //タイマーインスタンス生成
-        //this.mainTimer = new Timer();
+        timer = new Timer();
         //タスククラスインスタンス生成
-        //MyTimerTask mainTimerTask = new MyTimerTask();
+        MyTimerTask timerTask = new MyTimerTask(this);
         //タイマースケジュール設定＆開始
-        //this.mainTimer.schedule(mainTimerTask, 0,1000);
+        timer.scheduleAtFixedRate(timerTask, 0, 1000);
     }
 
     @Override
@@ -109,24 +109,24 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
     public void onLocationChanged(Location location) {
         // 緯度の表示
         TextView tv_lat = (TextView) findViewById(R.id.Latitude);
-        latitude = String.valueOf(location.getLatitude());
-        tv_lat.setText("緯度:" + latitude);
+        data.setLatitude(String.valueOf(location.getLatitude()));
+        tv_lat.setText("緯度:" + data.getLatitude());
 
         // 経度の表示
         TextView tv_lng = (TextView) findViewById(R.id.Longitude);
-        longitude = String.valueOf(location.getLongitude());
-        tv_lng.setText("経度:" + longitude);
+        data.setLongitude(String.valueOf(location.getLongitude()));
+        tv_lng.setText("経度:" + data.getLongitude());
 
         //緯度経度が更新されるタイミングで文字列のバイト数を表示
-        int detaSize = getByte(latitude + "," + longitude + "," + accelerationX + "," + accelerationY + ","
-                + accelerationY + "," + accelerationZ + "," + deviceId, "UTF-8");
-        Log.v("★文字列バイト数", String.valueOf(detaSize));
+        //int detaSize = getByte(data.getLatitude() + "," + data.getLongitude() + "," + data.getAccelerationX() + "," + data.getAccelerationY() + ","
+        //        + data.getAccelerationZ()+ "," + data.getDeviceId(), "UTF-8");
+        //Log.v("★文字列バイト数", String.valueOf(detaSize));
 
         //データをサーバに送信する
         //SendMessage post = new SendMessage();
         //post.execute(latitude,longitude,accelerationX,accelerationY,accelerationZ,deviceId);
-        SendGetTask sendGetTask = new SendGetTask();
-        sendGetTask.sendGetTask(latitude,longitude,accelerationX,accelerationY,accelerationZ,deviceId);
+        //SendGetTask sendGetTask = new SendGetTask();
+        //sendGetTask.sendGetTask(data.getLatitude(),data.getLongitude(),data.getAccelerationX(),data.getAccelerationY(),data.getAccelerationZ(),data.getAccelerationZ());
 
     }
 
@@ -173,13 +173,13 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            accelerationX = String.valueOf(sensorEvent.values[SensorManager.DATA_X]);
-            accelerationY = String.valueOf(sensorEvent.values[SensorManager.DATA_Y]);
-            accelerationZ = String.valueOf(sensorEvent.values[SensorManager.DATA_Z]);
+            data.setAccelerationX(String.valueOf(sensorEvent.values[SensorManager.DATA_X]));
+            data.setAccelerationY(String.valueOf(sensorEvent.values[SensorManager.DATA_Y]));
+            data.setAccelerationZ(String.valueOf(sensorEvent.values[SensorManager.DATA_Z]));
             String str = "加速度センサー値:"
-                    + "\nX軸:" + accelerationX
-                    + "\nY軸:" + accelerationY
-                    + "\nZ軸:" + accelerationZ;
+                    + "\nX軸:" + data.getAccelerationX()
+                    + "\nY軸:" + data.getAccelerationY()
+                    + "\nZ軸:" + data.getAccelerationZ();
             values.setText(str);
         }
     }
@@ -205,5 +205,14 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
             ret = 0;
         }
         return ret;
+    }
+
+    /**
+     * センサで取得したデータをサーバーに送信
+     */
+    public void send(){
+        SendGetTask sendGetTask = new SendGetTask();
+        sendGetTask.sendGetTask(data.getLatitude(),data.getLongitude(),data.getAccelerationX(),data.getAccelerationY(),
+                data.getAccelerationZ(),data.getDeviceId());
     }
 }
