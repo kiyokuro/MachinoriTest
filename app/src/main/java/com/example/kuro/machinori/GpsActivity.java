@@ -49,7 +49,7 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         Criteria criteria = new Criteria();
 
         // Accuracyを指定(MEDIUMにするとネットワークから位置情報取得。FINEにするとGPSから位置情報取得)
-        criteria.setAccuracy(Criteria.ACCURACY_MEDIUM);
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
 
         // PowerRequirementを指定(消費電力)
         criteria.setPowerRequirement(Criteria.POWER_MEDIUM);
