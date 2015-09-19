@@ -18,18 +18,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 
 
 public class GpsActivity extends Activity implements LocationListener, SensorEventListener {
@@ -42,6 +33,7 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
     private SensorManager manager;
     private TextView values;//加速度をセット
     private TextView tvDevicdId;//デバイスIDをセット
+    private Timer mainTimer;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -56,10 +48,10 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         // Criteriaオブジェクトを生成
         Criteria criteria = new Criteria();
 
-        // Accuracyを指定(高精度)
-        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        // Accuracyを指定(MEDIUMにするとネットワークから位置情報取得。FINEにするとGPSから位置情報取得)
+        criteria.setAccuracy(Criteria.ACCURACY_MEDIUM);
 
-        // PowerRequirementを指定(中消費電力)
+        // PowerRequirementを指定(消費電力)
         criteria.setPowerRequirement(Criteria.POWER_MEDIUM);
 
         // ロケーションプロバイダの取得
@@ -71,7 +63,7 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
 
         // LocationListenerを登録 1秒経つか2メートル移動したら位置情報を再取得
         mLocationManager.requestLocationUpdates(providerName,
-                1,//1秒
+                1000,//1秒
                 2,//2メートル
                 this);
 
@@ -86,6 +78,13 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         tvDevicdId = (TextView)findViewById(R.id.device_id);
         deviceId = telephonyManager.getDeviceId();
         tvDevicdId.setText("デバイスID"+ deviceId);
+
+        //タイマーインスタンス生成
+        //this.mainTimer = new Timer();
+        //タスククラスインスタンス生成
+        //MyTimerTask mainTimerTask = new MyTimerTask();
+        //タイマースケジュール設定＆開始
+        //this.mainTimer.schedule(mainTimerTask, 0,1000);
     }
 
     @Override
@@ -121,7 +120,14 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         //緯度経度が更新されるタイミングで文字列のバイト数を表示
         int detaSize = getByte(latitude + "," + longitude + "," + accelerationX + "," + accelerationY + ","
                 + accelerationY + "," + accelerationZ + "," + deviceId, "UTF-8");
-        Log.v("★文字列バイト数",String.valueOf(detaSize));
+        Log.v("★文字列バイト数", String.valueOf(detaSize));
+
+        //データをサーバに送信する
+        //SendMessage post = new SendMessage();
+        //post.execute(latitude,longitude,accelerationX,accelerationY,accelerationZ,deviceId);
+        SendGetTask sendGetTask = new SendGetTask();
+        sendGetTask.sendGetTask(latitude,longitude,accelerationX,accelerationY,accelerationZ,deviceId);
+
     }
 
     @Override
@@ -200,28 +206,4 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         }
         return ret;
     }
-
-    public void sendMessege(){
-        String url="http://localhost:8888/test";
-        HttpClient httpClient = new DefaultHttpClient();
-        HttpPost post = new HttpPost(url);
-
-        ArrayList<NameValuePair> params = new ArrayList <NameValuePair>();
-        params.add( new BasicNameValuePair("Latitude", latitude));
-        params.add( new BasicNameValuePair("Longitude", longitude));
-        params.add( new BasicNameValuePair("X", accelerationX));
-        params.add( new BasicNameValuePair("Y", accelerationY));
-        params.add( new BasicNameValuePair("Z", accelerationZ));
-        params.add( new BasicNameValuePair("DeviceId", deviceId));
-
-        HttpResponse res = null;
-
-        try {
-            post.setEntity(new UrlEncodedFormEntity(params, "utf-8"));
-            res = httpClient.execute(post);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
 }
