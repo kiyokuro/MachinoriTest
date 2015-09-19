@@ -18,7 +18,17 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -59,10 +69,10 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         TextView tv_provider = (TextView) findViewById(R.id.Provider);
         tv_provider.setText("Provider: "+providerName);
 
-        // LocationListenerを登録 10秒経つか10メートル移動したら位置情報を再取得
+        // LocationListenerを登録 1秒経つか2メートル移動したら位置情報を再取得
         mLocationManager.requestLocationUpdates(providerName,
-                1000,//10秒
-                10,//10メートル
+                1,//1秒
+                2,//2メートル
                 this);
 
 
@@ -106,11 +116,11 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         // 経度の表示
         TextView tv_lng = (TextView) findViewById(R.id.Longitude);
         longitude = String.valueOf(location.getLongitude());
-        tv_lng.setText("経度:"+longitude);
+        tv_lng.setText("経度:" + longitude);
 
         //緯度経度が更新されるタイミングで文字列のバイト数を表示
-        int detaSize = getByte(latitude+","+longitude+","+accelerationX+","+accelerationY+","
-                +accelerationY+","+accelerationZ+","+deviceId,"UTF-8");
+        int detaSize = getByte(latitude + "," + longitude + "," + accelerationX + "," + accelerationY + ","
+                + accelerationY + "," + accelerationZ + "," + deviceId, "UTF-8");
         Log.v("★文字列バイト数",String.valueOf(detaSize));
     }
 
@@ -189,6 +199,29 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
             ret = 0;
         }
         return ret;
+    }
+
+    public void sendMessege(){
+        String url="http://localhost:8888/test";
+        HttpClient httpClient = new DefaultHttpClient();
+        HttpPost post = new HttpPost(url);
+
+        ArrayList<NameValuePair> params = new ArrayList <NameValuePair>();
+        params.add( new BasicNameValuePair("Latitude", latitude));
+        params.add( new BasicNameValuePair("Longitude", longitude));
+        params.add( new BasicNameValuePair("X", accelerationX));
+        params.add( new BasicNameValuePair("Y", accelerationY));
+        params.add( new BasicNameValuePair("Z", accelerationZ));
+        params.add( new BasicNameValuePair("DeviceId", deviceId));
+
+        HttpResponse res = null;
+
+        try {
+            post.setEntity(new UrlEncodedFormEntity(params, "utf-8"));
+            res = httpClient.execute(post);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }
