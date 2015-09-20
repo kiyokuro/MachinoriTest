@@ -44,4 +44,10 @@
         android:text="response"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/viewSearchResult"
+        android:text="APIresult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 </LinearLayout>

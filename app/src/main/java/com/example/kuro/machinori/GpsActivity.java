@@ -13,11 +13,19 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 import java.util.Timer;
 
@@ -35,10 +43,14 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
     private Timer timer;
     Data data = new Data();
 
+    private TextView viewSearchResult;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+
+        viewSearchResult = (TextView)findViewById(R.id.viewSearchResult);
 
         // LocationManagerを取得
         LocationManager mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -128,6 +140,7 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         //SendGetTask sendGetTask = new SendGetTask();
         //sendGetTask.sendGetTask(data.getLatitude(),data.getLongitude(),data.getAccelerationX(),data.getAccelerationY(),data.getAccelerationZ(),data.getAccelerationZ());
 
+        searchFacilities();
     }
 
     @Override
@@ -214,5 +227,52 @@ public class GpsActivity extends Activity implements LocationListener, SensorEve
         SendGetTask sendGetTask = new SendGetTask();
         sendGetTask.sendGetTask(data.getLatitude(),data.getLongitude(),data.getAccelerationX(),data.getAccelerationY(),
                 data.getAccelerationZ(),data.getDeviceId());
+    }
+
+
+    // 検索ボタン押下処理
+    public void searchFacilities() {
+
+        String searchWord = "https://infra-api.city.kanazawa.ishikawa.jp/v1/facilities/search.json?lang=ja&geocode="+data.getLatitude()+","+data.getLongitude()+",300";
+
+        try {
+            // コネクション生成
+            HttpURLConnection connection = null;
+            URL url = new URL(searchWord);
+            connection = (HttpURLConnection)url.openConnection();
+            connection.setRequestMethod("GET");
+
+            // リクエスト送信
+            connection.connect();
+
+
+            // レスポンス文字列取得
+            BufferedInputStream inputStream = new BufferedInputStream(connection.getInputStream());
+            ByteArrayOutputStream responseArray = new ByteArrayOutputStream();
+            byte[] buff = new byte[1024];
+
+            int length;
+            while((length = inputStream.read(buff)) != -1) {
+                if(length > 0) {
+                    responseArray.write(buff, 0, length);
+                }
+            }
+
+            // JSONをパース
+            StringBuilder viewStrBuilder = new StringBuilder();
+            JSONObject jsonObj = new JSONObject(new String(responseArray.toByteArray()));
+            JSONArray result = jsonObj.getJSONArray("results");
+            for(int i = 0; i < result.length(); i++) {
+                JSONObject facility = result.getJSONObject(i);
+                viewStrBuilder.append(facility.getString("name") + "\n");
+                viewStrBuilder.append(facility.getString("address") + "\n");
+                viewStrBuilder.append("----------\n");
+            }
+            Log.v("金沢市APIを叩いた★","");
+            // 表示
+            viewSearchResult.setText(viewStrBuilder.toString());
+        } catch(Exception e) {
+            viewSearchResult.setText(e.getMessage());
+        }
     }
 }
